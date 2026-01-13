@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.env
+.DS_Store
+coverage
+.gemini
+debug.txt
+*.txt
+*.log
+tsc_output.txt
