@@ -10,6 +10,7 @@ export interface IFieldUIConfig {
     variant?: 'outlined' | 'filled' | 'standard';
     label: string;
     placeholder?: string;
+    autocomplete?: string;
     hidden?: boolean;
     className?: string;
     options?: { label: string; value: string | number }[];

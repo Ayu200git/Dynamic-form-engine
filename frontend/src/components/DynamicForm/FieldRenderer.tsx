@@ -54,6 +54,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({ field }) => {
                     type={type}
                     label={ui.label}
                     placeholder={ui.placeholder}
+                    autoComplete={ui.autocomplete}
                     error={errorMsg}
                     {...fieldProps}
                 />

@@ -9,81 +9,86 @@ export const generateZodSchema = (formSchema: IFormSchema) => {
     const schemaShape: Record<string, z.ZodTypeAny> = {};
 
     formSchema.fields.forEach((field: IFormField) => {
-        let fieldSchema: z.ZodTypeAny;
+        let fieldSchema: any;
+        const requiredMsg = `${field.ui.label} is required`;
 
-        // Base schema based on type
+        // 1. Initialize Base Schema
         switch (field.type) {
+            case 'email':
+                fieldSchema = z.string({ message: requiredMsg })
+                    .email({ message: "Invalid email address" });
+                break;
             case 'number':
-                fieldSchema = z.coerce.number({ message: `${field.ui.label} is required` });
+                fieldSchema = z.coerce.number({ message: `${field.ui.label} must be a number` });
                 break;
             case 'checkbox':
-                fieldSchema = z.boolean({ message: `${field.ui.label} is required` });
+                fieldSchema = z.boolean({ message: requiredMsg });
                 break;
-            case 'email':
-                fieldSchema = z.string({ message: `${field.ui.label} is required` }).email({ message: "Invalid email address" });
+            case 'date':
+                fieldSchema = z.string({ message: requiredMsg });
                 break;
+            case 'password':
+            case 'text':
             default:
-                fieldSchema = z.string({ message: `${field.ui.label} is required` });
+                fieldSchema = z.string({ message: requiredMsg });
                 break;
         }
 
-        // Apply validation rules to the base schema
+        // 2. Apply Custom Validation Rules
         if (field.validation && Array.isArray(field.validation)) {
             field.validation.forEach((rule) => {
                 const customMsg = rule.message || undefined;
                 switch (rule.type) {
-                    case 'min':
-                        if (field.type === 'number' && (fieldSchema as any).min) {
-                            fieldSchema = (fieldSchema as z.ZodNumber).min(Number(rule.value), customMsg || `Minimum value is ${rule.value}`);
-                        }
-                        break;
-                    case 'max':
-                        if (field.type === 'number' && (fieldSchema as any).max) {
-                            fieldSchema = (fieldSchema as z.ZodNumber).max(Number(rule.value), customMsg || `Maximum value is ${rule.value}`);
-                        }
-                        break;
                     case 'minLength':
-                        if ((fieldSchema as any).min) {
-                            fieldSchema = (fieldSchema as z.ZodString).min(Number(rule.value), customMsg || `${field.ui.label} must be at least ${rule.value} characters`);
+                        if (typeof fieldSchema.min === 'function' && field.type !== 'number') {
+                            fieldSchema = fieldSchema.min(Number(rule.value), customMsg);
                         }
                         break;
                     case 'maxLength':
-                        if ((fieldSchema as any).max) {
-                            fieldSchema = (fieldSchema as z.ZodString).max(Number(rule.value), customMsg || `${field.ui.label} must not exceed ${rule.value} characters`);
+                        if (typeof fieldSchema.max === 'function' && field.type !== 'number') {
+                            fieldSchema = fieldSchema.max(Number(rule.value), customMsg);
+                        }
+                        break;
+                    case 'min':
+                        if (field.type === 'number' && typeof fieldSchema.min === 'function') {
+                            fieldSchema = fieldSchema.min(Number(rule.value), customMsg);
+                        }
+                        break;
+                    case 'max':
+                        if (field.type === 'number' && typeof fieldSchema.max === 'function') {
+                            fieldSchema = fieldSchema.max(Number(rule.value), customMsg);
                         }
                         break;
                     case 'pattern':
-                        try {
-                            const regex = new RegExp(rule.value as string);
-                            if ((fieldSchema as any).regex) {
-                                fieldSchema = (fieldSchema as z.ZodString).regex(regex, customMsg || 'Invalid format');
+                        if (typeof fieldSchema.regex === 'function') {
+                            try {
+                                fieldSchema = fieldSchema.regex(new RegExp(rule.value as string), customMsg);
+                            } catch (e) {
+                                console.error(`Invalid regex: ${rule.value}`);
                             }
-                        } catch (e) {
-                            console.error(`Invalid regex pattern for field ${field.name}:`, rule.value);
                         }
                         break;
                 }
             });
         }
 
-        // Handle Required
+        // 3. Handle Required state
         if (field.required) {
-            const requiredMsg = `${field.ui.label} is required`;
             if (field.type === 'checkbox') {
-                fieldSchema = fieldSchema.refine(val => val === true, {
-                    message: requiredMsg
-                });
+                fieldSchema = fieldSchema.refine((val: any) => val === true, requiredMsg);
             } else if (field.type === 'number') {
-                fieldSchema = fieldSchema.refine(val => val !== undefined && val !== null && val !== '', {
-                    message: requiredMsg
-                });
+                // For Formik/Zod interop on numbers
+                fieldSchema = z.any()
+                    .refine(val => val !== '' && val !== undefined && val !== null, requiredMsg)
+                    .transform(val => Number(val))
+                    .pipe(z.number({ message: `${field.ui.label} must be a number` }));
             } else {
-                fieldSchema = (fieldSchema as z.ZodString).min(1, requiredMsg);
+                fieldSchema = fieldSchema.min(1, requiredMsg);
             }
         } else {
-            // Allow empty string or null if not required
+            // Optional: allow empty string or null
             if (field.type !== 'checkbox') {
-                fieldSchema = z.union([fieldSchema, z.literal(''), z.null(), z.undefined()]).optional();
+                fieldSchema = z.union([fieldSchema, z.literal(''), z.null()]).optional();
             }
         }
 
