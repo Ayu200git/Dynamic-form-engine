@@ -8,3 +8,5 @@ export const config = {
     JWT_SECRET: process.env.JWT_SECRET || 'super_secret_jwt_key_should_be_in_env',
     JWT_EXPIRES_IN: '1d'
 };
+console.log('Using MONGO_URI:', config.MONGO_URI.substring(0, 20) + '...');
+export default config;
