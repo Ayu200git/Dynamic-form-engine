@@ -9,7 +9,7 @@ dotenv.config();
 
 const seedData = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/dynamic-form-engine');
+        await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/dynamic-form-engine');
         console.log('MongoDB Connected');
 
         // Check if database is already seeded
@@ -62,13 +62,20 @@ const seedData = async () => {
                     name: 'email',
                     type: 'email',
                     required: true,
-                    ui: { label: 'Email Address', placeholder: 'Enter your email' }
+                    ui: { label: 'Email Address', placeholder: 'Enter your email', autocomplete: 'email' }
                 },
                 {
                     name: 'password',
                     type: 'password',
                     required: true,
-                    ui: { label: 'Password', placeholder: 'Enter your password' }
+                    validation: [
+                        {
+                            type: 'pattern',
+                            value: '^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{5,}$',
+                            message: 'Password must be at least 5 characters long and contain letters, numbers, and a special character.'
+                        }
+                    ],
+                    ui: { label: 'Password', placeholder: 'Enter your password', autocomplete: 'current-password' }
                 }
             ]
         });
@@ -87,13 +94,20 @@ const seedData = async () => {
                     name: 'email',
                     type: 'email',
                     required: true,
-                    ui: { label: 'Email Address', placeholder: 'Enter your email' }
+                    ui: { label: 'Email Address', placeholder: 'Enter your email', autocomplete: 'email' }
                 },
                 {
                     name: 'password',
                     type: 'password',
                     required: true,
-                    ui: { label: 'Password', placeholder: 'Choose a password' }
+                    validation: [
+                        {
+                            type: 'pattern',
+                            value: '^(?=.*[a-zA-Z])(?=.*\\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{5,}$',
+                            message: 'Password must be at least 5 characters long and contain letters, numbers, and a special character.'
+                        }
+                    ],
+                    ui: { label: 'Password', placeholder: 'Choose a password', autocomplete: 'new-password' }
                 },
                 {
                     name: 'role',

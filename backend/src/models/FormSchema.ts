@@ -27,6 +27,7 @@ const FormSchemaSchema = new Schema<IFormSchemaDocument>({
             variant: { type: String },
             label: { type: String, required: true },
             placeholder: { type: String },
+            autocomplete: { type: String },
             hidden: { type: Boolean, default: false },
             className: { type: String },
             options: [{ label: String, value: Schema.Types.Mixed }]
